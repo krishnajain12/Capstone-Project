@@ -1,7 +1,6 @@
 from airflow import DAG
-from airflow.operators.python import PythonOperator
+from airflow.providers.amazon.aws.operators.glue import GlueJobOperator
 from datetime import datetime
-import boto3
 
 # AWS region and updated Glue job names
 REGION = 'us-east-1'
@@ -9,11 +8,6 @@ GLUE_JOBS = [
     'poc-bootcamp-group-3-employee-leave-quota',
     'poc-bootcamp-group3-leave-calender-data'
 ]
-
-def trigger_glue_job(job_name):
-    client = boto3.client('glue', region_name=REGION)
-    response = client.start_job_run(JobName=job_name)
-    print(f"Triggered Glue job: {job_name}, Run ID: {response['JobRunId']}")
 
 default_args = {
     'owner': 'krishna',
@@ -29,14 +23,18 @@ with DAG(
     tags=['glue', 'employee', 'parallel']
 ) as dag:
 
-    trigger_quota_job = PythonOperator(
+    trigger_quota_job = GlueJobOperator(
         task_id='trigger_employee_leave_quota',
-        python_callable=lambda: trigger_glue_job('poc-bootcamp-group-3-employee-leave-quota')
+        job_name='poc-bootcamp-group-3-employee-leave-quota',
+        region_name=REGION,
+        wait_for_completion=True
     )
 
-    trigger_calendar_job = PythonOperator(
+    trigger_calendar_job = GlueJobOperator(
         task_id='trigger_employee_leave_calender_data',
-        python_callable=lambda: trigger_glue_job('poc-bootcamp-group3-leave-calender-data')
+        job_name='poc-bootcamp-group3-leave-calender-data',
+        region_name=REGION,
+        wait_for_completion=True
     )
 
-    # No dependency → runs in parallel
+    # No dependencies = both run in parallel
