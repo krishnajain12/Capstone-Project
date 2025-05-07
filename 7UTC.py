@@ -35,7 +35,8 @@ with DAG(
             task_id=f'trigger_{job_name.replace("-", "_")}',
             job_name=job_name,
             region_name='us-east-1',
-            wait_for_completion=True
+            wait_for_completion=True,
+            trigger_rule='all_done'
         )
 
         if previous_task:
